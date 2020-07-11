@@ -1,4 +1,5 @@
 {
     // Valid values: "autopep8", "black", "yapf", "none"
-    "python.formatting.provider": "black"
+    "python.formatting.provider": "black",
+    "python.pythonPath": "/home/james/.pyenv/versions/3.8.2/bin/python"
 }
