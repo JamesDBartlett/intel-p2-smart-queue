@@ -93,19 +93,21 @@ class PersonDetect:
         self.net = None
 
     # Load the model
-    def load_model(self):
+    def load_model(self, device):
         layer_support_checker(self.core, self.model, self.device)
         self.network = self.core.load_network(self.model, self.device, 1)
 
     # Get frame, run inference, return boxes with detected people
-    def predict(self, image, width, height):
-        input_image = {self.input_name: self.preprocess_input(image)}
+    def predict(self, image, w, h):
+        _input = self.preprocess_input(image)
         start_time = time.time()
-        request = self.network.start_async(request_id=0, inputs=input_image)
+        request = self.network.start_async(
+            request_id=0, inputs={self.input_name: _input}
+        )
         if request.wait() == 0:
             inf_time = time.time() - start_time
             outs = request.outputs[self.output_name]
-            bb_xy = self.preprocess_outputs(outs)
+            bb_xy = self.preprocess_outputs(outs, image)
             bounding_boxes, output_image = self.draw_outputs(bb_xy, image)
             timer_text = "Inference Time: {:.2f} milliseconds".format(inf_time / 0.001)
             cv2.putText(
@@ -122,13 +124,29 @@ class PersonDetect:
         return bounding_boxes, output_image
 
     def draw_outputs(self, coords, image):
-        raise NotImplementedError
+        copy = image.copy()
+        for c in coords:
+            cv2.rectangle(copy, c[:2], c[2:], self.l_green, 1)
+        return copy
 
-    def preprocess_outputs(self, outputs):
-        raise NotImplementedError
+    def preprocess_outputs(self, outputs, image):
+        h, w = image.shape[0:2]
+        coords = []
+        for b in outputs[0][0]:
+            if b[2] >= self.threshold:
+                xmin = int(b[3] * w)
+                ymin = int(b[4] * h)
+                xmax = int(b[5] * w)
+                ymax = int(b[6] * h)
+                coords.append((xmin, ymin, xmax, ymax))
+        return coords
 
     def preprocess_input(self, image):
-        raise NotImplementedError
+        copy = image
+        copy = cv2.resize(copy, (self.input_shape[3], self.input_shape[2]))
+        copy = copy.transpose((2, 0, 1))
+        copy = copy.reshape(1, 3, self.input_shape[2], self.input_shape[3])
+        return copy
 
 
 def main(args):
@@ -141,7 +159,7 @@ def main(args):
 
     start_model_load_time = time.time()
     pd = PersonDetect(model, device, threshold)
-    pd.load_model()
+    pd.load_model(device)
     total_model_load_time = time.time() - start_model_load_time
 
     queue = Queue()
