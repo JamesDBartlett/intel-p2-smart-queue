@@ -6,19 +6,14 @@ import sys
 import time
 import subprocess
 import logging
-
 import cv2
 import numpy as np
-
 from openvino.inference_engine import IENetwork, IECore
-
 
 logger = logging.getLogger(__name__)
 
 
 class Queue:
-    """Class for dealing with queues."""
-
     def __init__(self):
         self.queues = []
 
@@ -41,8 +36,6 @@ class Queue:
 
 
 class PersonDetect:
-    """Class for the Person Detection Model."""
-
     def __init__(self, model_name, device, threshold=0.60):
         self.model_weights = model_name + ".bin"
         self.model_structure = model_name + ".xml"
@@ -65,7 +58,6 @@ class PersonDetect:
         self._init_image_h = None
 
     def _get_model(self):
-        """Helper function for reading the network."""
         try:
             try:
                 model = self._ie_core.read_network(
@@ -84,8 +76,7 @@ class PersonDetect:
             return model
 
     def load_model(self):
-        """Load the model."""
-        # Load the model into the plugin
+
         self.exec_network = self._ie_core.load_network(
             network=self.model, device_name=self.device
         )
@@ -104,7 +95,6 @@ class PersonDetect:
             return self.draw_outputs(result, image)
 
     def draw_outputs(self, inference_blob, image):
-        """Draw bounding boxes onto the frame."""
         if not (self._init_image_w and self._init_image_h):
             raise RuntimeError("Initial image width and height cannot be None.")
         label = "Person"
@@ -115,7 +105,7 @@ class PersonDetect:
         text_thickness = 1
 
         coords = []
-        for box in inference_blob[0][0]:  # Output shape is 1x1xNx7
+        for box in inference_blob[0][0]:
             conf = box[2]
             if conf >= self.threshold:
                 xmin = int(box[3] * self._init_image_w)
@@ -161,7 +151,6 @@ class PersonDetect:
         return coords, image
 
     def preprocess_input(self, image):
-        """Helper function for processing frame"""
         p_frame = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
         # Change data layout from HWC to CHW
         p_frame = p_frame.transpose((2, 0, 1))
@@ -175,7 +164,6 @@ def main(args):
     pd = PersonDetect(args.model, args.device, args.threshold)
     pd.load_model()
     total_model_load_time = time.time() - start_model_load_time
-
     queue = Queue()
 
     try:
@@ -269,7 +257,6 @@ def main(args):
             out_video.write(image)
 
         key = cv2.waitKey(1) & 0xFF
-        # if the `q` key was pressed, break from the loop
         if key == ord("q"):
             break
 
