@@ -1,0 +1,4 @@
+{
+    // Valid values: "autopep8", "black", "yapf", "none"
+    "python.formatting.provider": "black"
+}

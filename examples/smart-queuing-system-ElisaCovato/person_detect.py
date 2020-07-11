@@ -8,9 +8,9 @@ import sys
 
 
 class Queue:
-    '''
+    """
         Class for dealing with queues
-    '''
+    """
 
     def __init__(self):
         self.queues = []
@@ -38,13 +38,13 @@ class Queue:
 
 
 class PersonDetect:
-    '''
+    """
         Class for the Person Detection Model.
-    '''
+    """
 
     def __init__(self, model_name, device, threshold=0.60):
-        self.model_weights = model_name + '.bin'
-        self.model_structure = model_name + '.xml'
+        self.model_weights = model_name + ".bin"
+        self.model_structure = model_name + ".xml"
         self.device = device
         self.threshold = threshold
 
@@ -52,7 +52,9 @@ class PersonDetect:
         try:
             self.model = IENetwork(self.model_structure, self.model_weights)
         except Exception as e:
-            raise ValueError("Could not Initialise the network. Have you entered the correct model path?")
+            raise ValueError(
+                "Could not Initialise the network. Have you entered the correct model path?"
+            )
 
         self.input_blob = next(iter(self.model.inputs))
         self.input_shape = self.model.inputs[self.input_blob].shape
@@ -62,7 +64,9 @@ class PersonDetect:
     # Function to load the model in the network
     def load_model(self):
         core = IECore()
-        self.net = core.load_network(network=self.model, device_name=self.device, num_requests=1)
+        self.net = core.load_network(
+            network=self.model, device_name=self.device, num_requests=1
+        )
 
     # Function to detect people in the frame:
     # get a frame from the video, runs the inference, returns the boxes
@@ -82,8 +86,15 @@ class PersonDetect:
             boxes, image = self.draw_outputs(coords, image)
             # Write inference time info on output video
             inf_time_message = "Inference time: {:.3f}ms".format(infer_time * 1000)
-            cv2.putText(image, inf_time_message, (15, 85), cv2.FONT_HERSHEY_SIMPLEX,
-                        1, (255, 153, 153), 2)
+            cv2.putText(
+                image,
+                inf_time_message,
+                (15, 85),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (255, 153, 153),
+                2,
+            )
             return boxes, image
 
     # Given a frame from the video and the coords of detections,
@@ -154,8 +165,13 @@ def main(args):
     initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
-    out_video = cv2.VideoWriter(os.path.join(output_path, 'output_video.mp4'), cv2.VideoWriter_fourcc(*'avc1'), fps,
-                                (initial_w, initial_h), True)
+    out_video = cv2.VideoWriter(
+        os.path.join(output_path, "output_video.mp4"),
+        cv2.VideoWriter_fourcc(*"avc1"),
+        fps,
+        (initial_w, initial_h),
+        True,
+    )
 
     counter = 0
     start_inference_time = time.time()
@@ -176,29 +192,70 @@ def main(args):
             y_pixel = 25
 
             # Add tot number of people on screen message
-            cv2.putText(image, f"Total people on screen: {len(coords)}", (15, 40), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                        (255, 124, 124), 2)
+            cv2.putText(
+                image,
+                f"Total people on screen: {len(coords)}",
+                (15, 40),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (255, 124, 124),
+                2,
+            )
 
             # Create an overlay of the original image
             overlay_boxes = image.copy()
             # For each queue box, draw it on the original image, add text and other info
             for idx, q in enumerate(queue.queues):
                 # Add queue box
-                overlay_boxes = cv2.rectangle(overlay_boxes, (q[0], q[1]), (q[2], q[3]), (0, 255, 0), 5)
+                overlay_boxes = cv2.rectangle(
+                    overlay_boxes, (q[0], q[1]), (q[2], q[3]), (0, 255, 0), 5
+                )
                 # Add text box (queue id and num people in that queue) inside queue box
-                cv2.rectangle(overlay_boxes, (q[0], q[1]), (q[0] + 240, q[1] + 90), (0, 0, 0), -1)
-                cv2.putText(overlay_boxes, f"Queue ID: {idx + 1}", (q[0] + 5, q[1] + 30), cv2.FONT_HERSHEY_SIMPLEX, 1.2,(0, 255, 0), 4)
+                cv2.rectangle(
+                    overlay_boxes, (q[0], q[1]), (q[0] + 240, q[1] + 90), (0, 0, 0), -1
+                )
+                cv2.putText(
+                    overlay_boxes,
+                    f"Queue ID: {idx + 1}",
+                    (q[0] + 5, q[1] + 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.2,
+                    (0, 255, 0),
+                    4,
+                )
                 if idx == 0:
                     people = num_people[1]
                 elif idx == 1:
                     people = num_people[2]
                 out_text += f"People: {people}"
-                cv2.putText(overlay_boxes, out_text, (q[0] + 5, q[1] + 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.putText(
+                    overlay_boxes,
+                    out_text,
+                    (q[0] + 5, q[1] + 70),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0, 255, 0),
+                    2,
+                )
 
                 if people >= int(max_people):
                     msg = f"Queue full: please move to next queue"
-                    cv2.rectangle(overlay_boxes, (q[0], q[1] + 100), (q[0] + 650, q[1] + 150), (0, 0, 0), -1)
-                    cv2.putText(overlay_boxes, msg, (q[0] + 5, q[1] + 135), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.rectangle(
+                        overlay_boxes,
+                        (q[0], q[1] + 100),
+                        (q[0] + 650, q[1] + 150),
+                        (0, 0, 0),
+                        -1,
+                    )
+                    cv2.putText(
+                        overlay_boxes,
+                        msg,
+                        (q[0] + 5, q[1] + 135),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (0, 0, 255),
+                        2,
+                    )
 
                 out_text = ""
 
@@ -211,10 +268,12 @@ def main(args):
         total_inference_time = round(total_time, 1)
         fps = counter / total_inference_time
 
-        with open(os.path.join(output_path, 'stats.txt'), 'w') as f:
-            f.write(str("Total inference time (s): ") + str(total_inference_time) + '\n')
-            f.write(str("Frame per second: ") + str(fps) + '\n')
-            f.write(str("Model loading time (s): ") + str(total_model_load_time) + '\n')
+        with open(os.path.join(output_path, "stats.txt"), "w") as f:
+            f.write(
+                str("Total inference time (s): ") + str(total_inference_time) + "\n"
+            )
+            f.write(str("Frame per second: ") + str(fps) + "\n")
+            f.write(str("Model loading time (s): ") + str(total_model_load_time) + "\n")
 
         cap.release()
         cv2.destroyAllWindows()
@@ -222,15 +281,15 @@ def main(args):
         print("Could not run Inference: ", e)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', required=True)
-    parser.add_argument('--device', default='CPU')
-    parser.add_argument('--video', default=None)
-    parser.add_argument('--queue_param', default=None)
-    parser.add_argument('--output_path', default='./results')
-    parser.add_argument('--max_people', default=2)
-    parser.add_argument('--threshold', default=0.60)
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--device", default="CPU")
+    parser.add_argument("--video", default=None)
+    parser.add_argument("--queue_param", default=None)
+    parser.add_argument("--output_path", default="./results")
+    parser.add_argument("--max_people", default=2)
+    parser.add_argument("--threshold", default=0.60)
 
     args = parser.parse_args()
 
