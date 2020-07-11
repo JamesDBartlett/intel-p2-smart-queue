@@ -51,7 +51,7 @@ class PersonDetect:
         # Initialize the network
         try:
             self.model = IENetwork(self.model_structure, self.model_weights)
-        except Exception as e:
+        except Exception:
             raise ValueError(
                 "Could not Initialise the network. Have you entered the correct model path?"
             )
@@ -151,7 +151,7 @@ def main(args):
         print("Adding queue params.")
         for q in queue_param:
             queue.add_queue(q)
-    except:
+    except Exception:
         print("Error loading queue param file")
 
     try:
@@ -163,7 +163,6 @@ def main(args):
 
     initial_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     out_video = cv2.VideoWriter(
         os.path.join(output_path, "output_video.mp4"),
@@ -189,7 +188,6 @@ def main(args):
             print(f"Total people on frame = {len(coords)}")
             print(f"Number of people in queue = {num_people}")
             out_text = ""
-            y_pixel = 25
 
             # Add tot number of people on screen message
             cv2.putText(

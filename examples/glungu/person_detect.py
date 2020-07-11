@@ -31,10 +31,6 @@ def check_layers_supported(engine, network, device):
     return all_supported
 
 
-def list_files():
-    onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
-
-
 class Queue:
     """
     Class for dealing with queues
@@ -74,7 +70,7 @@ class PersonDetect:
 
         try:
             self.model = IENetwork(self.model_structure, self.model_weights)
-        except Exception as e:
+        except Exception:
             raise ValueError(
                 "Could not Initialise the network. Have you entered the correct model path?"
             )
@@ -147,7 +143,7 @@ def main(args):
         queue_param = np.load(args.queue_param)
         for q in queue_param:
             queue.add_queue(q)
-    except:
+    except Exception:
         print("error loading queue param file")
 
     try:
@@ -159,7 +155,6 @@ def main(args):
 
     initial_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     out_video = cv2.VideoWriter(
         os.path.join(output_path, "output_video.mp4"),

@@ -12,7 +12,7 @@ def layer_support_checker(core, net, dev):
     """
     Check if all layers in the given network are supported
     on the given device and return the answer as boolean value
-    """    
+    """
     all_layers = net.layers.keys()
     supported_layers = core.query_nework(net, dev)
     return_value = True
@@ -23,6 +23,8 @@ def layer_support_checker(core, net, dev):
     if return_value:
         print(dev, " supports all layers for this model!")
     return return_value
+
+
 class Queue:
     """
     Class for dealing with queues
@@ -120,21 +122,12 @@ class PersonDetect:
         return bounding_boxes, output_image
 
     def draw_outputs(self, coords, image):
-        """
-        TODO: This method needs to be completed by you
-        """
         raise NotImplementedError
 
     def preprocess_outputs(self, outputs):
-        """
-        TODO: This method needs to be completed by you
-        """
         raise NotImplementedError
 
     def preprocess_input(self, image):
-        """
-        TODO: This method needs to be completed by you
-        """
         raise NotImplementedError
 
 
@@ -169,7 +162,6 @@ def main(args):
 
     initial_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     out_video = cv2.VideoWriter(
         os.path.join(output_path, "output_video.mp4"),
