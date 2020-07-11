@@ -19,20 +19,20 @@ import time
 import argparse
 import traceback
 import numpy as np
-from openvino.inference_engine import IECore
+from openvino.inference_engine import IECore, IENetwork
 
 
-def layer_support_checker(core, net, dev):
-    all_layers = net.layers.keys()
-    supported_layers = core.query_nework(net, dev)
-    return_value = True
-    for l in all_layers:
-        if l not in supported_layers:
-            return_value = False
-            print(dev, "does not support Layer", l, ":-(")
-    if return_value:
-        print(dev, " supports all layers for this model!")
-    return return_value
+# def layer_support_checker(core, net, dev):
+#     all_layers = net.layers.keys()
+#     supported_layers = net.query_nework(net, dev)
+#     return_value = True
+#     for l in all_layers:
+#         if l not in supported_layers:
+#             return_value = False
+#             print(dev, "does not support Layer", l, ":-(")
+#     if return_value:
+#         print(dev, " supports all layers for this model!")
+#     return return_value
 
 
 class Queue:
@@ -74,6 +74,7 @@ class PersonDetect:
 
     def __init__(self, model_name, device, threshold=0.60):
         self.core = IECore()
+        self.net = IENetwork()
         self.model_weights = model_name + ".bin"
         self.model_structure = model_name + ".xml"
         self.device = device
@@ -93,12 +94,11 @@ class PersonDetect:
         self.input_shape = self.model.inputs[self.input_name].shape
         self.output_name = next(iter(self.model.outputs))
         self.output_shape = self.model.outputs[self.output_name].shape
-        self.net = None
 
     # Load the model
     def load_model(self, device):
-        layer_support_checker(self.core, self.model, self.device)
-        self.network = self.core.load_network(self.model, self.device, 1)
+        # layer_support_checker(self.net, self.model, self.device)
+        self.network = self.core.load_network(self.model, self.device, num_requests=1)
 
     # Get frame, run inference, return boxes with detected people
     def predict(self, image):
