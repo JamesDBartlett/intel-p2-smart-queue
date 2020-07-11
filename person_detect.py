@@ -17,7 +17,6 @@ import cv2
 import sys
 import time
 import argparse
-import traceback
 import numpy as np
 from openvino.inference_engine import IECore
 
@@ -56,13 +55,14 @@ class PersonDetect:
     l_magenta = list(a_magenta)
 
     def __init__(self, model_name, device, threshold=0.60):
-        self.core = IECore()
+        self.network = None
         self.model_weights = model_name + ".bin"
         self.model_structure = model_name + ".xml"
         self.device = device
         self.threshold = threshold
 
         try:
+            self.core = IECore()
             self.model = self.core.read_network(
                 self.model_structure, self.model_weights
             )
@@ -75,27 +75,25 @@ class PersonDetect:
         self.input_shape = self.model.inputs[self.input_name].shape
         self.output_name = next(iter(self.model.outputs))
         self.output_shape = self.model.outputs[self.output_name].shape
-        self.network = None
 
-    def load_model(self):
-        self.network = self.core.load_network(self.model, self.device, num_requests=1)
+    def load_model(self, device):
+        self.network = self.core.load_network(self.model, device, num_requests=1)
 
-    def predict(self, image, w, h):
-        if not isinstance(image, np.ndarray):
-            raise IOError("Image parsing failed.")
+    def predict(self, image):
         _input = self.preprocess_input(image)
-        request = self.network.start_async(
+        self.network.start_async(
             request_id=0, inputs={self.input_name: _input}
-        ).wait(-1)
-        if request == 0:
-            return self.draw_outputs(
-                self.network.requests[0].outputs[self.output_name], image
-            )
+        )
+        if self.network.requests[0].wait() == 0:
+            output = self.network.requests[0].outputs[self.output_name]
+        coords = self.preprocess_outputs(output, image)
+        image = self.draw_outputs(coords, image)
+        return coords, image
 
     def draw_outputs(self, coords, image):
         copy = image.copy()
         for c in coords:
-            cv2.rectangle(copy, c[:2], c[2:], self.l_green, 1)
+            cv2.rectangle(copy, tuple(c[:2]), tuple(c[2:]), self.l_green, 1)
         return copy
 
     def preprocess_outputs(self, outputs, image):
@@ -114,7 +112,7 @@ class PersonDetect:
         a, b, h, w = self.input_shape
         resized_img = cv2.resize(image, (w, h), interpolation=cv2.INTER_AREA)
         transposed_img = resized_img.transpose((2, 0, 1))
-        output_img = transposed_img.reshape(a, *output_img.shape)
+        output_img = transposed_img.reshape(a, b, h, w)
         return output_img
 
 
@@ -128,7 +126,7 @@ def main(args):
 
     start_model_load_time = time.time()
     pd = PersonDetect(model, device, threshold)
-    pd.load_model()
+    pd.load_model(device)
     total_model_load_time = time.time() - start_model_load_time
 
     queue = Queue()
@@ -148,15 +146,15 @@ def main(args):
         print("Something else went wrong with the video file: ", e)
 
     initial_ = {}
-    initial_['w'] = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    initial_['h'] = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    initial_["w"] = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    initial_["h"] = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     out_video = cv2.VideoWriter(
         os.path.join(output_path, "output_video.mp4"),
         cv2.VideoWriter_fourcc(*"avc1"),
         fps,
         (initial_["w"], initial_["h"]),
-        True,
+        True
     )
 
     counter = 0
@@ -169,7 +167,7 @@ def main(args):
                 break
             counter += 1
 
-            coords, image = pd.predict(frame, initial_["w"], initial_["h"])
+            coords, image = pd.predict(frame)
             num_people = queue.check_coords(coords)
             print(f"Total People in frame = {len(coords)}")
             print(f"Number of people in queue = {num_people}")
@@ -206,7 +204,6 @@ def main(args):
         cv2.destroyAllWindows()
     except Exception as e:
         print("Could not run Inference: ", e)
-        traceback.print_exc()
 
 
 if __name__ == "__main__":
@@ -222,24 +219,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
-
-    #     outs = request.outputs[self.output_name]
-    #     bb_xy = self.preprocess_outputs(outs, image)
-    #     bounding_boxes, output_image = self.draw_outputs(bb_xy, image)
-    # return bounding_boxes, output_image
-
-    """ 
-    start_time = time.time()
-    inf_time = time.time() - start_time
-    timer_text = "Inference Time: {:.2f} milliseconds".format(inf_time / 0.001)
-                cv2.putText(
-                    image,
-                    timer_text,
-                    (30, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1,
-                    self.l_blue,
-                    2,
-                    None,
-                    None,
-    ) """
