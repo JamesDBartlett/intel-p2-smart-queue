@@ -2,14 +2,12 @@
 
 exec 1>/output/stdout.log 2>/output/stderr.log
 
-
 MODEL=$1
 DEVICE=$2
 VIDEO=$3
 QUEUE=$4
 OUTPUT=$5
 PEOPLE=$6
-
 
 mkdir -p $5
 

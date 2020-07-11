@@ -2,16 +2,13 @@
 
 exec 1>/output/stdout.log 2>/output/stderr.log
 
-# TODO: Create MODEL variable
-# TODO: Create DEVICE variable
-# TODO: Create VIDEO variable
 MODEL=$1
 DEVICE=$2
 VIDEO=$3
 QUEUE=$4
 OUTPUT=$5
-# TODO: Create PEOPLE variable
 PEOPLE=$6
+
 mkdir -p $5
 
 if echo "$DEVICE" | grep -q "FPGA"; then # if device passed in is FPGA, load bitstream to program FPGA

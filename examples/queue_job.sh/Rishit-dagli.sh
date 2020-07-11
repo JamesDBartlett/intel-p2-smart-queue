@@ -2,19 +2,11 @@
 
 exec 1>/output/stdout.log 2>/output/stderr.log
 
-# Create MODEL variable
 MODEL=$1
-
-# Create DEVICE variable
 DEVICE=$2
-
-# Create VIDEO variable
 VIDEO=$3
-
 QUEUE=$4
 OUTPUT=$5
-
-# TODO: Create PEOPLE variable
 PEOPLE=$6
 
 mkdir -p $5
