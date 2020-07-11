@@ -1,11 +1,13 @@
 import numpy as np
 import time
-from openvino.inference_engine import IECore
+from openvino.inference_engine import IECore, IENetwork
 import os
 import cv2
 import argparse
 import sys
 
+def layer_support_checker(core, net, dev):
+    return True
 
 class Queue:
     """
@@ -15,15 +17,18 @@ class Queue:
     def __init__(self):
         self.queues = []
 
+    # Points in the frame where the queues should be
     def add_queue(self, points):
         self.queues.append(points)
 
+    # Get bounding area of queues based on the queue points
     def get_queues(self, image):
         for q in self.queues:
             x_min, y_min, x_max, y_max = q
             frame = image[y_min:y_max, x_min:x_max]
             yield frame
 
+    # Check if incoming coordinates are within the queue
     def check_coords(self, coords):
         d = {k + 1: 0 for k in range(len(self.queues))}
         for coord in coords:
@@ -39,14 +44,15 @@ class PersonDetect:
     """
 
     def __init__(self, model_name, device, threshold=0.60):
+        self.core = IECore()
         self.model_weights = model_name + ".bin"
         self.model_structure = model_name + ".xml"
         self.device = device
         self.threshold = threshold
 
+        # Init IENetwork
         try:
-            self.core = IECore()
-            self.model = core.read_network(model=model_structure, weights=model_weights)
+            self.model = self.core.read_network(self.model_structure, self.model_weights)
         except Exception as e:
             raise ValueError(
                 "Could not Initialise the network. Have you enterred the correct model path?"
@@ -56,18 +62,17 @@ class PersonDetect:
         self.input_shape = self.model.inputs[self.input_name].shape
         self.output_name = next(iter(self.model.outputs))
         self.output_shape = self.model.outputs[self.output_name].shape
+        self.net = None
 
+    # Load the model
     def load_model(self):
-        """
-        TODO: This method needs to be completed by you
-        """
-        raise NotImplementedError
-
+        layer_support_checker(core, self.model, self.device)
+        self.network = self.core.load_network(self.model, self.device, 1)
+    
+    # Get frame, run inference, return boxes with detected people
     def predict(self, image):
-        """
-        TODO: This method needs to be completed by you
-        """
-        raise NotImplementedError
+        preprocpic = self.preprocess_input(image)
+        request = self.network.start_async(request_id=0, inputs=preprocpic)
 
     def draw_outputs(self, coords, image):
         """
