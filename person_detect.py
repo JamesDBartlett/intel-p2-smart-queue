@@ -1,3 +1,17 @@
+"""
+Intel Edge AI for IoT Developers Nanodegree
+Project 2: Smart Queue Monitoring System
+
+person_detect.py
+
+By James D. Bartlett III
+    https://jdbartlett.net
+    https://github.com/JamesDBartlett
+    https://linkedin.com/in/JamesDBartlett3
+    Twitter: @jamesdbartlett3
+"""
+
+
 import os
 import cv2
 import sys
@@ -98,11 +112,20 @@ class PersonDetect:
         self.network = self.core.load_network(self.model, self.device, 1)
 
     # Get frame, run inference, return boxes with detected people
-    def predict(self, image, w, h):
+    def predict(self, image):
+        """
+        Asynchronous inference
+        Arguments:
+            image: Image data (dtype: list)
+        Returns: 
+            - Outputs
+            - Image
+        """
         _input = self.preprocess_input(image)
+        _name = self.input_name
         start_time = time.time()
         request = self.network.start_async(
-            request_id=0, inputs={self.input_name: _input}
+            request_id=0, inputs={_name: _input}
         )
         if request.wait() == 0:
             inf_time = time.time() - start_time
@@ -199,7 +222,7 @@ def main(args):
                 break
             counter += 1
 
-            coords, image = pd.predict(frame, initial_w, initial_h)
+            coords, image = pd.predict(frame)
             num_people = queue.check_coords(coords)
             print(f"Total People in frame = {len(coords)}")
             print(f"Number of people in queue = {num_people}")
