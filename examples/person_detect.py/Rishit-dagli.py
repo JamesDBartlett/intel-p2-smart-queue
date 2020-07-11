@@ -304,7 +304,6 @@ def main(args):
                 )
                 out_text = ""
                 y_pixel += 40
-
             out_video.write(image)
 
         total_time = time.time() - start_inference_time
@@ -318,7 +317,6 @@ def main(args):
 
         cap.release()
         cv2.destroyAllWindows()
-
     except Exception as e:
         print("Could not run Inference: ", e)
 
