@@ -23,10 +23,6 @@ from openvino.inference_engine import IECore
 
 
 def layer_support_checker(core, net, dev):
-    """
-    Check if all layers in the given network are supported
-    on the given device and return the answer as boolean value
-    """
     all_layers = net.layers.keys()
     supported_layers = core.query_nework(net, dev)
     return_value = True
@@ -40,10 +36,6 @@ def layer_support_checker(core, net, dev):
 
 
 class Queue:
-    """
-    Class for dealing with queues
-    """
-
     def __init__(self):
         self.queues = []
 
@@ -69,9 +61,6 @@ class Queue:
 
 
 class PersonDetect:
-    """
-    Class for the Person Detection Model.
-    """
 
     # Setup colors for drawing bounding boxes and text on output image
     a_red = [0, 0, 185]
