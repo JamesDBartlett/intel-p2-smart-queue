@@ -1,14 +1,28 @@
-import numpy as np
-import time
-from openvino.inference_engine import IECore, IENetwork
 import os
 import cv2
-import argparse
 import sys
+import time
+import argparse
+import traceback
+import numpy as np
+from openvino.inference_engine import IECore
+
 
 def layer_support_checker(core, net, dev):
-    return True
-
+    """
+    Check if all layers in the given network are supported
+    on the given device and return the answer as boolean value
+    """    
+    all_layers = net.layers.keys()
+    supported_layers = core.query_nework(net, dev)
+    return_value = True
+    for l in all_layers:
+        if l not in supported_layers:
+            return_value = False
+            print("Layer ", l, " support not available for ", dev)
+    if return_value:
+        print(dev, " supports all layers for this model!")
+    return return_value
 class Queue:
     """
     Class for dealing with queues
@@ -43,6 +57,16 @@ class PersonDetect:
     Class for the Person Detection Model.
     """
 
+    # Setup colors for drawing bounding boxes and text on output image
+    a_red = [0, 0, 185]
+    a_green = [0, 185, 0]
+    a_blue = [185, 0, 0]
+    a_magenta = [185, 0, 245]
+    l_red = list(a_red)
+    l_green = list(a_green)
+    l_blue = list(a_blue)
+    l_magenta = list(a_magenta)
+
     def __init__(self, model_name, device, threshold=0.60):
         self.core = IECore()
         self.model_weights = model_name + ".bin"
@@ -50,10 +74,12 @@ class PersonDetect:
         self.device = device
         self.threshold = threshold
 
-        # Init IENetwork
         try:
-            self.model = self.core.read_network(self.model_structure, self.model_weights)
-        except Exception as e:
+            # Create IENetwork object from IR model
+            self.model = self.core.read_network(
+                self.model_structure, self.model_weights
+            )
+        except Exception:
             raise ValueError(
                 "Could not Initialise the network. Have you enterred the correct model path?"
             )
@@ -66,13 +92,32 @@ class PersonDetect:
 
     # Load the model
     def load_model(self):
-        layer_support_checker(core, self.model, self.device)
+        layer_support_checker(self.core, self.model, self.device)
         self.network = self.core.load_network(self.model, self.device, 1)
-    
+
     # Get frame, run inference, return boxes with detected people
-    def predict(self, image):
-        preprocpic = self.preprocess_input(image)
-        request = self.network.start_async(request_id=0, inputs=preprocpic)
+    def predict(self, image, width, height):
+        input_image = {self.input_name: self.preprocess_input(image)}
+        start_time = time.time()
+        request = self.network.start_async(request_id=0, inputs=input_image)
+        if request.wait() == 0:
+            inf_time = time.time() - start_time
+            outs = request.outputs[self.output_name]
+            bb_xy = self.preprocess_outputs(outs)
+            bounding_boxes, output_image = self.draw_outputs(bb_xy, image)
+            timer_text = "Inference Time: {:.2f} milliseconds".format(inf_time / 0.001)
+            cv2.putText(
+                image,
+                timer_text,
+                (30, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                self.l_blue,
+                2,
+                None,
+                None,
+            )
+        return bounding_boxes, output_image
 
     def draw_outputs(self, coords, image):
         """
@@ -112,7 +157,7 @@ def main(args):
         queue_param = np.load(args.queue_param)
         for q in queue_param:
             queue.add_queue(q)
-    except:
+    except Exception:
         print("error loading queue param file")
 
     try:
@@ -124,7 +169,7 @@ def main(args):
 
     initial_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     out_video = cv2.VideoWriter(
         os.path.join(output_path, "output_video.mp4"),
@@ -144,7 +189,7 @@ def main(args):
                 break
             counter += 1
 
-            coords, image = pd.predict(frame)
+            coords, image = pd.predict(frame, initial_w, initial_h)
             num_people = queue.check_coords(coords)
             print(f"Total People in frame = {len(coords)}")
             print(f"Number of people in queue = {num_people}")
@@ -181,6 +226,7 @@ def main(args):
         cv2.destroyAllWindows()
     except Exception as e:
         print("Could not run Inference: ", e)
+        traceback.print_exc()
 
 
 if __name__ == "__main__":

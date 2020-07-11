@@ -86,9 +86,6 @@ class PersonDetect:
         self.network = None
 
     def load_model(self):
-        """
-        TODO: This method needs to be completed by you
-        """
         core = IECore()
         check_layers_supported(core, self.model, self.device)
 
@@ -97,9 +94,6 @@ class PersonDetect:
         )
 
     def predict(self, image):
-        """
-        TODO: This method needs to be completed by you
-        """
         net_input = self.preprocess_input(image)
         infer_request_handle = self.network.start_async(request_id=0, inputs=net_input)
         if infer_request_handle.wait() == 0:
@@ -108,9 +102,6 @@ class PersonDetect:
             return self.draw_outputs(boxes, image)
 
     def draw_outputs(self, coords, image):
-        """
-        TODO: This method needs to be completed by you
-        """
         w = image.shape[1]
         h = image.shape[0]
         boxes = []
@@ -122,9 +113,6 @@ class PersonDetect:
         return boxes, image
 
     def preprocess_outputs(self, outputs):
-        """
-        TODO: This method needs to be completed by you
-        """
         boxes = []
         probs = outputs[0, 0, :, 2]
         for i, p in enumerate(probs):
@@ -134,9 +122,6 @@ class PersonDetect:
         return boxes
 
     def preprocess_input(self, image):
-        """
-        TODO: This method needs to be completed by you
-        """
         input_image = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
         input_image = input_image.transpose((2, 0, 1))
         input_image = input_image.reshape(1, *input_image.shape)
