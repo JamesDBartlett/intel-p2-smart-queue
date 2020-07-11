@@ -81,9 +81,7 @@ class PersonDetect:
 
     def predict(self, image):
         _input = self.preprocess_input(image)
-        self.network.start_async(
-            request_id=0, inputs={self.input_name: _input}
-        )
+        self.network.start_async(request_id=0, inputs={self.input_name: _input})
         if self.network.requests[0].wait() == 0:
             output = self.network.requests[0].outputs[self.output_name]
         coords = self.preprocess_outputs(output, image)
@@ -154,7 +152,7 @@ def main(args):
         cv2.VideoWriter_fourcc(*"avc1"),
         fps,
         (initial_["w"], initial_["h"]),
-        True
+        True,
     )
 
     counter = 0
