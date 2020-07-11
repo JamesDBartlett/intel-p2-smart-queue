@@ -33,7 +33,7 @@ def layer_support_checker(core, net, dev):
     for l in all_layers:
         if l not in supported_layers:
             return_value = False
-            print("Layer ", l, " support not available for ", dev)
+            print(dev, "does not support Layer", l, ":-(")
     if return_value:
         print(dev, " supports all layers for this model!")
     return return_value
@@ -143,7 +143,7 @@ class PersonDetect:
         return copy
 
     def preprocess_outputs(self, outputs, image):
-        h, w = image.shape[0:2]
+        h, w = image.shape[:2]
         coords = []
         for b in outputs[0][0]:
             if b[2] >= self.threshold:
@@ -155,11 +155,11 @@ class PersonDetect:
         return coords
 
     def preprocess_input(self, image):
-        copy = image
-        copy = cv2.resize(copy, (self.input_shape[3], self.input_shape[2]))
-        copy = copy.transpose((2, 0, 1))
-        copy = copy.reshape(1, 3, self.input_shape[2], self.input_shape[3])
-        return copy
+        a, b, h, w = self.input_shape
+        resized_img = cv2.resize(image, (w, h), interpolation=cv2.INTER_AREA)
+        transposed_img = resized_img.transpose((2, 0, 1))
+        output_img = transposed_img.reshape(a, b, h, w)
+        return output_img
 
 
 def main(args):
