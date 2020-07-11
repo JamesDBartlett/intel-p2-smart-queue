@@ -113,20 +113,10 @@ class PersonDetect:
 
     # Get frame, run inference, return boxes with detected people
     def predict(self, image):
-        """
-        Asynchronous inference
-        Arguments:
-            image: Image data (dtype: list)
-        Returns: 
-            - Outputs
-            - Image
-        """
         _input = self.preprocess_input(image)
         _name = self.input_name
         start_time = time.time()
-        request = self.network.start_async(
-            request_id=0, inputs={_name: _input}
-        )
+        request = self.network.start_async(request_id=0, inputs={_name: _input})
         if request.wait() == 0:
             inf_time = time.time() - start_time
             outs = request.outputs[self.output_name]
