@@ -12,10 +12,6 @@ import numpy as np
 
 from openvino.inference_engine import IENetwork, IECore
 
-try:
-    from tqdm import tqdm
-except BaseException:
-    tqdm = None
 
 logger = logging.getLogger(__name__)
 
@@ -203,10 +199,7 @@ def main(args):
 
     pd._init_image_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     pd._init_image_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
-    if tqdm:
-        pbar = tqdm(total=int(video_len - fps + 1))
 
     out_video = cv2.VideoWriter(
         os.path.join(args.output_path, "output_video.mp4"),
@@ -219,76 +212,66 @@ def main(args):
     counter = 0
     start_inference_time = time.time()
 
-    try:
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            counter += 1
+    while cap.isOpened():
+        ret, frame = cap.read()
+        counter += 1
 
-            if tqdm:
-                pbar.update(1)
+        predict_start_time = time.time()
+        coords, image = pd.predict(frame)
+        total_inference_time_taken = time.time() - predict_start_time
+        message = f"Inference time: {total_inference_time_taken*1000:.2f}ms"
+        cv2.putText(
+            image,
+            message,
+            (15, pd._init_image_h - 50),
+            cv2.FONT_HERSHEY_COMPLEX,
+            0.75,
+            (255, 255, 255),
+            1,
+        )
+        num_people = queue.check_coords(coords)
 
-            predict_start_time = time.time()
-            coords, image = pd.predict(frame)
-            total_inference_time_taken = time.time() - predict_start_time
-            message = f"Inference time: {total_inference_time_taken*1000:.2f}ms"
+        print(f"Total People in frame = {len(coords)}")
+        print(f"Number of people in queue = {num_people}")
+
+        out_text = ""
+        y_pixel = 25
+
+        for k, v in num_people.items():
+            out_text += f"No. of People in Queue {k} is {v} "
             cv2.putText(
                 image,
-                message,
-                (15, pd._init_image_h - 50),
+                out_text,
+                (15, y_pixel),
                 cv2.FONT_HERSHEY_COMPLEX,
-                0.75,
-                (255, 255, 255),
                 1,
+                (0, 255, 0),
+                2,
             )
-            num_people = queue.check_coords(coords)
-
-            if tqdm:
-                tqdm.write(f"Total People in frame = {len(coords)}")
-                tqdm.write(f"Number of people in queue = {num_people}")
-            else:
-                print(f"Total People in frame = {len(coords)}")
-                print(f"Number of people in queue = {num_people}")
-
-            out_text = ""
-            y_pixel = 25
-
-            for k, v in num_people.items():
-                out_text += f"No. of People in Queue {k} is {v} "
+            if v >= int(args.max_people):
+                out_text += " Queue full; Please move to next Queue!"
                 cv2.putText(
                     image,
                     out_text,
                     (15, y_pixel),
                     cv2.FONT_HERSHEY_COMPLEX,
                     1,
-                    (0, 255, 0),
+                    (0, 0, 255),
                     2,
                 )
-                if v >= int(args.max_people):
-                    out_text += " Queue full; Please move to next Queue!"
-                    cv2.putText(
-                        image,
-                        out_text,
-                        (15, y_pixel),
-                        cv2.FONT_HERSHEY_COMPLEX,
-                        1,
-                        (0, 0, 255),
-                        2,
-                    )
-                out_text = ""
-                y_pixel += 40
+            out_text = ""
+            y_pixel += 40
 
-            # print total_inference_time_taken
-            if args.debug:
-                cv2.imshow("Frame", image)
-            else:
-                out_video.write(image)
+        # print total inference time taken
+        if args.debug:
+            cv2.imshow("Frame", image)
+        else:
+            out_video.write(image)
 
-            key = cv2.waitKey(1) & 0xFF
-            # if the `q` key was pressed, break from the loop
-            if key == ord("q"):
-                break
+        key = cv2.waitKey(1) & 0xFF
+        # if the `q` key was pressed, break from the loop
+        if key == ord("q"):
+            break
 
         total_time = time.time() - start_inference_time
         total_inference_time = round(total_time, 1)
@@ -301,12 +284,8 @@ def main(args):
             f.write(str(fps) + "\n")
             f.write(str(total_model_load_time) + "\n")
 
-        if tqdm:
-            pbar.close()
         cap.release()
         cv2.destroyAllWindows()
-    except Exception as e:
-        logger.exception(f"Could not run Inference: {str(e)}")
 
 
 if __name__ == "__main__":
