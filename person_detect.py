@@ -16,6 +16,7 @@ import os
 import cv2
 import sys
 import time
+import random
 import argparse
 import numpy as np
 from openvino.inference_engine import IECore
@@ -89,9 +90,10 @@ class PersonDetect:
         return coords, image
 
     def draw_outputs(self, coords, image):
+        colors = [self.l_red, self.l_green, self.l_blue, self.l_magenta]
         copy = image.copy()
         for c in coords:
-            cv2.rectangle(copy, tuple(c[:2]), tuple(c[2:]), self.l_green, 1)
+            cv2.rectangle(copy, tuple(c[:2]), tuple(c[2:]), random.choice(colors), 3)
         return copy
 
     def preprocess_outputs(self, outputs, image):
