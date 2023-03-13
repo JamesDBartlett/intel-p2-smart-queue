@@ -6,9 +6,9 @@ person_detect.py
 
 By James D. Bartlett III
     https://jdbartlett.net
-    https://github.com/JamesDBartlett
+    https://github.com/JamesDBartlett3
     https://linkedin.com/in/JamesDBartlett3
-    Twitter: @jamesdbartlett3
+    https://techhub.social/@JamesDBartlett3
 """
 
 
